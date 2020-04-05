@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Demo Canvas</title>
+  <style>
+    canvas {
+      border: 1px solid black;
+      background-color: red;
+      width: 100%;
+    }
+  </style>
+</head>
+
+<body>
+  <canvas width="1000" height="500" id="myCanvas"></canvas>
+  <script>
+    var canvas = document.getElementById("myCanvas");
+    var ctx = canvas.getContext("2d");
+    let screenWidth = parseInt(canvas.getAttribute('width'));
+    let screenHeight = parseInt(canvas.getAttribute('height'));
+    const width = 50;
+    let isGameLive = true;
+    
+    class GameCharacter {
+      constructor(ctx, x, y, width, height, color, speed) {
+        this.ctx = ctx;
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+        this.color = color;
+        this.speed = speed;
+        this.maxSpeed = 4;
+      }
+
+      moveVertically(y) {
+        if (this.y > screenHeight - 100 || this.y < 50) {
+          this.speed = -this.speed;
+        }
+        this.y += this.speed;
+      }
+
+      moveHorizontally(x) {
+        this.x += this.speed;
+      }
+
+      draw() {
+        this.ctx.fillStyle = this.color;
+        this.ctx.fillRect(this.x, this.y, this.width, this.height);
+      }
+    }
+
+    const enemies = [
+      new GameCharacter(
+        ctx, 200, 225, width, width, "rgb(0,0,255)", 2
+      ),
+      new GameCharacter(
+        ctx, 450, screenHeight - 100, width, width, "rgb(0,0,255)", 3
+      ),
+      new GameCharacter(
+        ctx, 700, 50, width, width, "rgb(0,0,255)", 4
+      ),
+    ]
+
+    const player = new GameCharacter(ctx, 50, 225, width, width, "rgb(0,225,0)", 0)
+    const goal = new GameCharacter(ctx , screenWidth - 100, 175, width, width + 100, "rgb(0,0,0)",0)
+
+    document.onkeydown = function(event) {
+      const keyPressed = event.code;
+      if(keyPressed == "ArrowRight") {
+        player.speed = player.x >= screenWidth - 100 ? 0 : player.maxSpeed;
+      }
+      if(keyPressed == "ArrowLeft") {
+        player.speed = player.x <= 50 ? 0 : -player.maxSpeed;
+      }
+
+    }
+
+    document.onkeyup = function(event) {
+      player.speed = 0;
+    }
+
+    const checkCollision = function(rect1, rect2) {
+      const overlapX = Math.abs(rect1.x - rect2.x) <= width
+      const overlapY = Math.abs(rect1.y - rect2.y) <= width
+      return overlapX && overlapY;
+    }
+
+    const draw = function () {
+      ctx.clearRect(0, 0, screenWidth, screenHeight);
+
+      player.draw();
+      goal.draw();
+
+      if(checkCollision(goal, player)){
+        endGameLogic('You won');
+      }
+
+      for (const enemy of enemies) {
+        if(checkCollision(player, enemy)){
+          endGameLogic('Game Over');
+        }
+        enemy.draw();
+      }
+    }
+
+    const endGameLogic = function(text) {
+      alert(text);
+      window.location = ''
+      isGameLive = false;
+    };
+
+    const update = function () {
+      player.moveHorizontally();
+
+      for (const enemy of enemies) {
+        enemy.moveVertically();
+      }
+    }
+
+    const step = function () {
+      update();
+      draw();
+      if(isGameLive){
+        window.requestAnimationFrame(step);
+      }
+    }
+    step();
+  </script>
+</body>
+</body>
+
+</html>
