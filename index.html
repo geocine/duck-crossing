@@ -2,35 +2,49 @@
 <html lang="en">
 
 <head>
-  <title>Demo Canvas</title>
+  <title>Duck Crossing</title>
   <style>
     canvas {
-      border: 1px solid black;
-      background-color: red;
       width: 100%;
     }
   </style>
 </head>
 
 <body>
+  <h2>Duck Crossing</h2>
   <canvas width="1000" height="500" id="myCanvas"></canvas>
+  Use ← and → to move the duck. Do not get hit by the grab. Reach the treasure to win.
   <script>
     var canvas = document.getElementById("myCanvas");
     var ctx = canvas.getContext("2d");
     let screenWidth = parseInt(canvas.getAttribute('width'));
     let screenHeight = parseInt(canvas.getAttribute('height'));
-    const width = 50;
     let isGameLive = true;
-    
+    let sprites = {};
+
+    const loadSprites = function () {
+      sprites.player = new Image();
+      sprites.player.src = "images/hero.png";
+
+      sprites.background = new Image();
+      sprites.background.src = "images/floor.png";
+
+      sprites.enemy = new Image();
+      sprites.enemy.src = "images/enemy.png";
+
+      sprites.goal = new Image();
+      sprites.goal.src = "images/chest.png";
+    }
+
     class GameCharacter {
-      constructor(ctx, x, y, width, height, color, speed) {
+      constructor(ctx, x, y, width, height, sprite, speed) {
         this.ctx = ctx;
         this.x = x;
         this.y = y;
         this.width = width;
         this.height = height;
-        this.color = color;
         this.speed = speed;
+        this.sprite = sprite
         this.maxSpeed = 4;
       }
 
@@ -42,70 +56,97 @@
       }
 
       moveHorizontally(x) {
-        this.x += this.speed;
+        if (this.x + this.speed <= screenWidth - 100 && this.x + this.speed >= 50) {
+          this.x += this.speed;
+        }
       }
 
       draw() {
-        this.ctx.fillStyle = this.color;
-        this.ctx.fillRect(this.x, this.y, this.width, this.height);
+        this.ctx.drawImage(this.sprite, this.x, this.y, this.width, this.height);
       }
     }
+
+    loadSprites();
 
     const enemies = [
       new GameCharacter(
-        ctx, 200, 225, width, width, "rgb(0,0,255)", 2
+        ctx, 200, 225, 40, 40, sprites.enemy, 2
       ),
       new GameCharacter(
-        ctx, 450, screenHeight - 100, width, width, "rgb(0,0,255)", 3
+        ctx, 450, screenHeight - 100, 40, 40, sprites.enemy, 3
       ),
       new GameCharacter(
-        ctx, 700, 50, width, width, "rgb(0,0,255)", 4
+        ctx, 700, 50, 40, 40, sprites.enemy, 4
       ),
     ]
 
-    const player = new GameCharacter(ctx, 50, 225, width, width, "rgb(0,225,0)", 0)
-    const goal = new GameCharacter(ctx , screenWidth - 100, 175, width, width + 100, "rgb(0,0,0)",0)
+    const player = new GameCharacter(ctx, 50, 200, 40, 40, sprites.player, 0)
+    const goal = new GameCharacter(ctx, screenWidth - 100, 200, 50, 36, sprites.goal, 0)
 
-    document.onkeydown = function(event) {
+    let rightPressed = false;
+    let leftPressed = false;
+
+
+    document.onkeydown = function (event) {
       const keyPressed = event.code;
-      if(keyPressed == "ArrowRight") {
-        player.speed = player.x >= screenWidth - 100 ? 0 : player.maxSpeed;
+      if (keyPressed == "ArrowRight") {
+        rightPressed = true;
+        if (!leftPressed) {
+          player.speed = player.maxSpeed;
+        }
       }
-      if(keyPressed == "ArrowLeft") {
-        player.speed = player.x <= 50 ? 0 : -player.maxSpeed;
+      if (keyPressed == "ArrowLeft") {
+        leftPressed = true;
+        if (!rightPressed) {
+          player.speed = -player.maxSpeed;
+        }
       }
-
+      console.log(player.x)
     }
 
-    document.onkeyup = function(event) {
-      player.speed = 0;
+    document.onkeyup = function (event) {
+      const keyPressed = event.code;
+      if (keyPressed == "ArrowRight") {
+        rightPressed = false;
+        if (!leftPressed) {
+          player.speed = 0;
+        }
+      }
+      if (keyPressed == "ArrowLeft") {
+        leftPressed = false;
+        if (!rightPressed) {
+          player.speed = 0;
+        }
+      }
     }
 
-    const checkCollision = function(rect1, rect2) {
-      const overlapX = Math.abs(rect1.x - rect2.x) <= width
-      const overlapY = Math.abs(rect1.y - rect2.y) <= width
+    const checkCollision = function (rect1, rect2) {
+      const overlapX = Math.abs(rect1.x - rect2.x) <= Math.max(rect1.width, rect2.width);
+      const overlapY = Math.abs(rect1.y - rect2.y) <= Math.max(rect1.height, rect2.height);
       return overlapX && overlapY;
     }
 
     const draw = function () {
       ctx.clearRect(0, 0, screenWidth, screenHeight);
 
+      ctx.drawImage(sprites.background, 0, 0);
+
       player.draw();
       goal.draw();
 
-      if(checkCollision(goal, player)){
+      if (checkCollision(goal, player)) {
         endGameLogic('You won');
       }
 
       for (const enemy of enemies) {
-        if(checkCollision(player, enemy)){
+        if (checkCollision(player, enemy)) {
           endGameLogic('Game Over');
         }
         enemy.draw();
       }
     }
 
-    const endGameLogic = function(text) {
+    const endGameLogic = function (text) {
       alert(text);
       window.location = ''
       isGameLive = false;
@@ -122,10 +163,11 @@
     const step = function () {
       update();
       draw();
-      if(isGameLive){
+      if (isGameLive) {
         window.requestAnimationFrame(step);
       }
     }
+
     step();
   </script>
 </body>
